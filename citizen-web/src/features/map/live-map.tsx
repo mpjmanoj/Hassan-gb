@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { LatLng, VehicleLocation } from "@/types/domain";
+import type { LatLng, VehicleLocation } from "@swachhata/core";
 import { MAPS } from "@/lib/config";
 import { GoogleLiveMap } from "@/features/map/google-live-map";
 import { PreviewMap } from "@/features/map/preview-map";

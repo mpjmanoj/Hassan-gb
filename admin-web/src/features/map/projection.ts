@@ -1,4 +1,4 @@
-import type { LatLng } from "@/types/domain";
+import type { LatLng } from "@swachhata/core";
 
 export const VIEW = { width: 960, height: 620, padding: 72 } as const;
 

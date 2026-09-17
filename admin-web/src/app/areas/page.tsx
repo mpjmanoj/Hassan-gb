@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useStore } from "@/hooks/use-store";
-import { store } from "@/lib/store";
+import { store } from "@swachhata/core";
 import { EmptyState, Field, Modal, PageHeader } from "@/components/ui";
 
 export default function AreasPage() {

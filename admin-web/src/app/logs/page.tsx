@@ -4,7 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { useStore } from "@/hooks/use-store";
 import { EmptyState, PageHeader } from "@/components/ui";
-import { formatClock, formatDay } from "@/lib/time";
+import { formatClock, formatDay } from "@swachhata/core";
 
 function LogsView() {
   const state = useStore();

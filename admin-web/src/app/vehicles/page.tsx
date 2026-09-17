@@ -2,13 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import type { Vehicle } from "@/types/domain";
+import type { Vehicle } from "@swachhata/core";
 import { useStore } from "@/hooks/use-store";
-import { fleetRows, type FleetRow } from "@/lib/selectors";
-import { ConflictError, store } from "@/lib/store";
+import { fleetRows, type FleetRow } from "@swachhata/core";
+import { ConflictError, store } from "@swachhata/core";
 import { StatusPill } from "@/components/status-pill";
 import { EmptyState, ErrorNote, Field, Modal, PageHeader } from "@/components/ui";
-import { relativeTime } from "@/lib/time";
+import { relativeTime } from "@swachhata/core";
 
 type Dialog =
   | { kind: "none" }

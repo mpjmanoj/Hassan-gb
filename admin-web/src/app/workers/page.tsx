@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useStore } from "@/hooks/use-store";
-import { fleetRows } from "@/lib/selectors";
-import { ConflictError, store } from "@/lib/store";
+import { fleetRows } from "@swachhata/core";
+import { ConflictError, store } from "@swachhata/core";
 import { EmptyState, ErrorNote, Field, Modal, PageHeader } from "@/components/ui";
-import { relativeTime, todayIso } from "@/lib/time";
+import { relativeTime, todayIso } from "@swachhata/core";
 
 export default function WorkersPage() {
   const state = useStore();

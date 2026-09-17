@@ -7,8 +7,8 @@ import type {
   Ward,
   WorkSession,
   Worker,
-} from "@/types/domain";
-import { todayIso } from "@/lib/time";
+} from "./types";
+import { todayIso } from "./time";
 
 /**
  * Development fixtures only.

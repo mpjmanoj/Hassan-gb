@@ -2,10 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import type { Area, Ward } from "@/types/domain";
+import type { Area, Ward } from "@swachhata/core";
 import { useSession } from "@/features/auth/session-provider";
 import { AreaWardPicker } from "@/features/ward/area-ward-picker";
-import { getDataService } from "@/lib/data";
+import { getDataService } from "@swachhata/core";
 import { Wordmark } from "@/components/logo";
 
 export default function ProfilePage() {

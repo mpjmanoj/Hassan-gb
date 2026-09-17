@@ -1,6 +1,6 @@
-import type { LatLng, VehicleLocation } from "@/types/domain";
+import type { LatLng, VehicleLocation } from "@swachhata/core";
 import { TRACKING } from "@/lib/config";
-import { lerpAngle, lerpLatLng, resolveHeading } from "@/lib/geo";
+import { lerpAngle, lerpLatLng, resolveHeading } from "@swachhata/core";
 
 export interface Pose extends LatLng {
   heading: number;

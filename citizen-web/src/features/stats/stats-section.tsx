@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { SwachhataStats } from "@/types/domain";
+import type { SwachhataStats } from "@swachhata/core";
 import { AnimatedNumber } from "@/components/animated-number";
-import { getDataService } from "@/lib/data";
+import { getDataService } from "@swachhata/core";
 import { ProgressRing } from "@/features/stats/progress-ring";
 import { CollectionTrend } from "@/features/stats/collection-trend";
 

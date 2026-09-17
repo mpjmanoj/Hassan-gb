@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useStore } from "@/hooks/use-store";
-import { ConflictError, store } from "@/lib/store";
+import { ConflictError, store } from "@swachhata/core";
 import { EmptyState, ErrorNote, Field, Modal, PageHeader } from "@/components/ui";
 
 export default function WardsPage() {

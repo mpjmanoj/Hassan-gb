@@ -1,0 +1,11 @@
+{
+  "name": "swachhata-hasan",
+  "private": true,
+  "workspaces": ["packages/*", "citizen-web", "admin-web"],
+  "scripts": {
+    "dev:citizen": "npm run dev -w swachhata-hasan-citizen",
+    "dev:admin": "npm run dev -w swachhata-hasan-admin -- -p 3001",
+    "build": "npm run build -w swachhata-hasan-citizen && npm run build -w swachhata-hasan-admin",
+    "typecheck": "npm run typecheck -w swachhata-hasan-citizen && npm run typecheck -w swachhata-hasan-admin"
+  }
+}

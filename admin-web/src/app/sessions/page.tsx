@@ -1,9 +1,9 @@
 "use client";
 
 import { useStore } from "@/hooks/use-store";
-import { store } from "@/lib/store";
+import { store } from "@swachhata/core";
 import { EmptyState, PageHeader } from "@/components/ui";
-import { formatClock, formatDuration } from "@/lib/time";
+import { formatClock, formatDuration } from "@swachhata/core";
 
 const TONE: Record<string, string> = {
   ACTIVE: "bg-brand-light text-brand-dark",

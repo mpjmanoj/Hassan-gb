@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import type { LatLng } from "@/types/domain";
+import type { LatLng } from "@swachhata/core";
 import { LiveMap } from "@/features/map/live-map";
 import { LiveBadge } from "@/components/live-badge";
-import { distanceMeters, formatDistance } from "@/lib/geo";
-import { formatClock, relativeTime } from "@/lib/time";
+import { distanceMeters, formatDistance } from "@swachhata/core";
+import { formatClock, relativeTime } from "@swachhata/core";
 import { useCitizenPosition } from "@/features/tracking/use-citizen-position";
 import type { WardTrackingResult } from "@/features/tracking/use-ward-tracking";
 

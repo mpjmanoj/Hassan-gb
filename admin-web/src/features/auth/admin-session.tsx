@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import type { Admin } from "@/types/domain";
+import type { Admin } from "@swachhata/core";
 
 const KEY = "swachhata.admin";
 

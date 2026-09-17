@@ -6,7 +6,7 @@ import { useWardTracking } from "@/features/tracking/use-ward-tracking";
 import { TrackingSection } from "@/features/tracking/tracking-section";
 import { StatsSection } from "@/features/stats/stats-section";
 import { LogoMark } from "@/components/logo";
-import { greeting } from "@/lib/time";
+import { greeting } from "@swachhata/core";
 
 const HEADLINE: Record<string, string> = {
   LIVE: "Your collection vehicle is on the route now.",

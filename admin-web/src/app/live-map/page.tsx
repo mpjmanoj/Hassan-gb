@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { useStore } from "@/hooks/use-store";
-import { fleetRows } from "@/lib/selectors";
+import { fleetRows } from "@swachhata/core";
 import { StatusPill } from "@/components/status-pill";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { FleetMap } from "@/features/map/fleet-map";
-import { formatClock, relativeTime } from "@/lib/time";
+import { formatClock, relativeTime } from "@swachhata/core";
 
 export default function LiveMapPage() {
   const state = useStore();

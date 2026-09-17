@@ -1,4 +1,4 @@
-import type { TrackingStateKind } from "@/types/domain";
+import type { TrackingStateKind } from "@swachhata/core";
 
 const PRESET: Record<
   TrackingStateKind,

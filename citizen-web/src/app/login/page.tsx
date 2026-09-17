@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthLayout } from "@/features/auth/auth-layout";
-import { getDataService, ServiceError } from "@/lib/data";
+import { getDataService, ServiceError } from "@swachhata/core";
 import { PENDING_PHONE_KEY } from "@/features/auth/keys";
 
 export default function LoginPage() {

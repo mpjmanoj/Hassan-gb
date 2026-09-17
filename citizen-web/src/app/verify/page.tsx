@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AuthLayout } from "@/features/auth/auth-layout";
 import { OtpInput } from "@/components/otp-input";
-import { getDataService, ServiceError } from "@/lib/data";
+import { getDataService, ServiceError } from "@swachhata/core";
 import { useSession } from "@/features/auth/session-provider";
 import { PENDING_PHONE_KEY } from "@/features/auth/keys";
-import { isMockData } from "@/lib/config";
+import { isDemoData } from "@/lib/config";
 
 const RESEND_SECONDS = 30;
 
@@ -85,7 +85,7 @@ export default function VerifyPage() {
         </p>
       ) : null}
 
-      {isMockData ? (
+      {isDemoData ? (
         <p className="mt-4 rounded-xl bg-surface-muted px-3 py-2.5 text-[13px] text-ink-muted">
           Demo build — the code is <span className="font-semibold text-ink">123456</span>. Real
           codes are sent by SMS once the backend is connected.

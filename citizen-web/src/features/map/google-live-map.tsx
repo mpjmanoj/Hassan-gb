@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { LatLng, VehicleLocation } from "@/types/domain";
+import type { LatLng, VehicleLocation } from "@swachhata/core";
 import { MAPS } from "@/lib/config";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { MarkerAnimator } from "@/features/map/animator";

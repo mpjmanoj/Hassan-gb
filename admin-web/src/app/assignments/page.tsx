@@ -2,10 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { useStore } from "@/hooks/use-store";
-import { ConflictError, store } from "@/lib/store";
+import { ConflictError, store } from "@swachhata/core";
 import { EmptyState, ErrorNote, Field, Modal, PageHeader } from "@/components/ui";
-import { todayIso } from "@/lib/time";
-import type { Assignment } from "@/types/domain";
+import { todayIso } from "@swachhata/core";
+import type { Assignment } from "@swachhata/core";
 
 const STATUS_TONE: Record<Assignment["status"], string> = {
   SCHEDULED: "bg-surface-muted text-ink-muted",

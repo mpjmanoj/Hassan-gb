@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import type { LatLng } from "@/types/domain";
+import type { LatLng } from "@swachhata/core";
 
 const CONSENT_KEY = "swachhata.location-consent";
 

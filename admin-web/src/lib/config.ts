@@ -1,21 +1,13 @@
-/** Tuning values that the backend will eventually own. Kept in one place on purpose. */
-export const TRACKING = {
-  /** A vehicle is only LIVE while the newest stored fix is younger than this. */
-  liveWindowMs: 45_000,
-  /** Expected gap between fixes while moving — drives the marker animation duration. */
-  expectedUpdateIntervalMs: 6_000,
-  /** Animation is clamped so a late fix never leaves the truck crawling or teleporting. */
-  minAnimationMs: 600,
-  maxAnimationMs: 9_000,
-} as const;
+export { TRACKING, DEFAULT_CENTER, DEFAULT_ZOOM } from "@swachhata/core";
+import { DEFAULT_CENTER, DEFAULT_ZOOM } from "@swachhata/core";
 
 export const MAPS = {
   apiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "",
-  /** Hassan city centre — the default camera before any vehicle fix arrives. */
-  defaultCenter: { lat: 13.0068, lng: 76.0996 },
-  defaultZoom: 15,
+  mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID",
+  defaultCenter: DEFAULT_CENTER,
+  defaultZoom: DEFAULT_ZOOM,
 } as const;
 
-export const DATA_SOURCE = (process.env.NEXT_PUBLIC_DATA_SOURCE ?? "mock") as "mock" | "supabase";
-
-export const isMockData = DATA_SOURCE === "mock";
+/** "demo" runs on the shared in-browser store; "supabase" once the backend exists. */
+export const DATA_SOURCE = (process.env.NEXT_PUBLIC_DATA_SOURCE ?? "demo") as "demo" | "supabase";
+export const isDemoData = DATA_SOURCE === "demo";

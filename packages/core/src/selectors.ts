@@ -7,10 +7,10 @@ import type {
   Ward,
   WorkSession,
   Worker,
-} from "@/types/domain";
-import type { StoreState } from "@/lib/store";
-import { TRACKING } from "@/lib/config";
-import { todayIso } from "@/lib/time";
+} from "./types";
+import type { StoreState } from "./store";
+import { TRACKING } from "./config";
+import { todayIso } from "./time";
 
 export interface FleetRow {
   vehicle: Vehicle;
@@ -36,11 +36,12 @@ export function fleetRows(state: StoreState, now = Date.now()): FleetRow[] {
     const assignments = state.assignments.filter(
       (a) => a.vehicleId === vehicle.id && a.assignmentDate === date && a.status !== "CANCELLED",
     );
-    // The assignment being worked now, else the next scheduled one, else whatever is left.
+    // The assignment being worked now, then any absence (staff need to see and undo it),
+    // then the next scheduled one.
     const assignment =
       assignments.find((a) => a.status === "ACTIVE") ??
+      assignments.find((a) => a.isAbsent || a.status === "ABSENT") ??
       assignments.find((a) => a.status === "SCHEDULED") ??
-      assignments.find((a) => a.status === "ABSENT") ??
       assignments[0] ??
       null;
 

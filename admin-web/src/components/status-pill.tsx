@@ -1,5 +1,5 @@
-import type { FleetStatus } from "@/types/domain";
-import { FLEET_STATUS_LABEL } from "@/lib/selectors";
+import type { FleetStatus } from "@swachhata/core";
+import { FLEET_STATUS_LABEL } from "@swachhata/core";
 
 const TONE: Record<FleetStatus, { dot: string; text: string; bg: string; pulse: boolean }> = {
   LIVE: { dot: "bg-brand", text: "text-brand-dark", bg: "bg-brand-light", pulse: true },

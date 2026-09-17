@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { LatLng } from "@/types/domain";
-import type { FleetRow } from "@/lib/selectors";
+import type { LatLng } from "@swachhata/core";
+import type { FleetRow } from "@swachhata/core";
 import { MAPS } from "@/lib/config";
 import { useReducedMotion } from "@/hooks/use-reduced-motion";
 import { MarkerAnimator } from "@/features/map/animator";

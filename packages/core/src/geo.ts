@@ -1,4 +1,4 @@
-import type { LatLng, VehicleLocation } from "@/types/domain";
+import type { LatLng, VehicleLocation } from "./types";
 
 const EARTH_RADIUS_M = 6_371_008.8;
 

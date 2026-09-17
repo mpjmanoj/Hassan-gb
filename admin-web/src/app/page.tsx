@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { useStore } from "@/hooks/use-store";
-import { dashboardCounts, fleetRows } from "@/lib/selectors";
+import { dashboardCounts, fleetRows } from "@swachhata/core";
 import { StatTile } from "@/components/stat-tile";
 import { StatusPill } from "@/components/status-pill";
 import { PageHeader } from "@/components/ui";
 import { FleetMap } from "@/features/map/fleet-map";
-import { formatClock, relativeTime } from "@/lib/time";
+import { formatClock, relativeTime } from "@swachhata/core";
 
 export default function DashboardPage() {
   const state = useStore();

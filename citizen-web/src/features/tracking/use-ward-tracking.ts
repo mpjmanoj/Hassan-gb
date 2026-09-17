@@ -1,13 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { TrackingStateKind, VehicleLocation, WardTracking } from "@/types/domain";
-import { getDataService, ServiceError } from "@/lib/data";
+import type { TrackingStateKind, VehicleLocation, WardTracking } from "@swachhata/core";
+import { getDataService, ServiceError } from "@swachhata/core";
 import { TRACKING } from "@/lib/config";
-import { evaluateFix } from "@/lib/geo";
+import { evaluateFix } from "@swachhata/core";
 
-/** Assignments and absences change during the day, so the snapshot is re-read periodically. */
-const SNAPSHOT_REFRESH_MS = 60_000;
 /** Drives the "updated N seconds ago" line and the live/stale flip. */
 const CLOCK_MS = 1_000;
 
@@ -33,6 +31,8 @@ export function useWardTracking(wardId: string | null): WardTrackingResult {
   const [nonce, setNonce] = useState(0);
   const [tick, setTick] = useState(0);
   const acceptedRef = useRef<VehicleLocation | null>(null);
+  /** Set once the live subscription has delivered; the initial fetch then stands down. */
+  const pushedRef = useRef(false);
 
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
@@ -46,11 +46,14 @@ export function useWardTracking(wardId: string | null): WardTrackingResult {
 
     let cancelled = false;
     setLoading(true);
+    pushedRef.current = false;
 
     const load = async () => {
       try {
         const snapshot = await getDataService().getWardTracking(wardId);
-        if (cancelled) return;
+        // A push that landed while this was in flight describes a later moment than this
+        // reply does, so the reply is dropped rather than rewinding the screen.
+        if (cancelled || pushedRef.current) return;
         setTracking(snapshot);
         setError(null);
 
@@ -73,10 +76,19 @@ export function useWardTracking(wardId: string | null): WardTrackingResult {
     };
 
     void load();
-    const interval = setInterval(load, SNAPSHOT_REFRESH_MS);
+
+    // Operations changes — an absence, a cancelled assignment, a session ending — arrive
+    // as pushes rather than on a poll, so the citizen sees them within a frame.
+    const unsubscribe = getDataService().subscribeToWardTracking(wardId, (snapshot) => {
+      if (cancelled) return;
+      pushedRef.current = true;
+      setTracking(snapshot);
+      setError(null);
+    });
+
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      unsubscribe();
     };
   }, [wardId, nonce]);
 

@@ -1,10 +1,10 @@
 "use client";
 
 import { useStore } from "@/hooks/use-store";
-import { dashboardCounts, fleetRows } from "@/lib/selectors";
+import { dashboardCounts, fleetRows } from "@swachhata/core";
 import { PageHeader } from "@/components/ui";
 import { StatTile } from "@/components/stat-tile";
-import { formatDuration, todayIso } from "@/lib/time";
+import { formatDuration, todayIso } from "@swachhata/core";
 
 export default function ReportsPage() {
   const state = useStore();

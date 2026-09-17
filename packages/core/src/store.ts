@@ -1,5 +1,3 @@
-"use client";
-
 import type {
   Area,
   Assignment,
@@ -11,8 +9,8 @@ import type {
   Ward,
   WorkSession,
   Worker,
-} from "@/types/domain";
-import { todayIso } from "@/lib/time";
+} from "./types";
+import { todayIso } from "./time";
 import {
   areas as seedAreas,
   assignments as seedAssignments,
@@ -21,15 +19,16 @@ import {
   wards as seedWards,
   workSessions as seedSessions,
   workers as seedWorkers,
-} from "@/lib/mock/fixtures";
-import { latestLocations, subscribeToFleet } from "@/lib/mock/simulator";
+} from "./fixtures";
+import { locationFor, subscribeToSessions } from "./simulator";
 
 /**
- * In-memory operational store for the dashboard.
+ * The single operational state both web apps read from.
  *
- * It exists so the admin screens can be built and reviewed before the backend lands, and it
- * keeps the same invariants the database will enforce — most importantly, no two active
- * assignments for the same vehicle, worker or route on the same day.
+ * It stands in for Postgres + Realtime: the admin dashboard writes to it, the citizen app
+ * reads from it, and changes propagate to every open tab on the same origin. It keeps the
+ * invariants the database will own, so the errors staff see here are the errors they will
+ * see once the server enforces them.
  */
 
 export interface StoreState {
@@ -41,8 +40,12 @@ export interface StoreState {
   assignments: Assignment[];
   sessions: WorkSession[];
   logs: VehicleLog[];
+  /** Freshest fix per vehicle. Derived from the live feed, never persisted. */
   locations: Record<string, VehicleLocation>;
 }
+
+/** The slice that is written by staff, and therefore worth persisting and sharing. */
+type PersistedState = Omit<StoreState, "locations">;
 
 export class ConflictError extends Error {
   constructor(message: string) {
@@ -51,20 +54,27 @@ export class ConflictError extends Error {
   }
 }
 
-const listeners = new Set<() => void>();
-let fleetUnsubscribe: (() => void) | null = null;
+const STORAGE_KEY = "swachhata.operational-state.v1";
+const CHANNEL = "swachhata.operational-state";
 
-let state: StoreState = {
-  vehicles: seedVehicles,
-  workers: seedWorkers,
-  areas: seedAreas,
-  wards: seedWards,
-  routes: seedRoutes,
-  assignments: seedAssignments,
-  sessions: seedSessions,
-  logs: seedLogs(),
-  locations: {},
-};
+const listeners = new Set<() => void>();
+let channel: BroadcastChannel | null = null;
+let feedUnsubscribe: (() => void) | null = null;
+let hydrated = false;
+
+function seedState(): StoreState {
+  return {
+    vehicles: seedVehicles,
+    workers: seedWorkers,
+    areas: seedAreas,
+    wards: seedWards,
+    routes: seedRoutes,
+    assignments: seedAssignments,
+    sessions: seedSessions,
+    logs: seedLogs(),
+    locations: {},
+  };
+}
 
 function seedLogs(): VehicleLog[] {
   const now = Date.now();
@@ -86,12 +96,67 @@ function seedLogs(): VehicleLog[] {
   }));
 }
 
+let state: StoreState = seedState();
+
 function emit() {
   listeners.forEach((listener) => listener());
 }
 
-function setState(patch: Partial<StoreState>) {
+function persistedSlice(source: StoreState): PersistedState {
+  const { locations: _locations, ...rest } = source;
+  return rest;
+}
+
+function persist() {
+  if (typeof window === "undefined") return;
+  try {
+    const payload = JSON.stringify({ date: todayIso(), data: persistedSlice(state) });
+    window.localStorage.setItem(STORAGE_KEY, payload);
+    channel?.postMessage(payload);
+  } catch {
+    // A full or blocked storage quota must not break the running app.
+  }
+}
+
+function applyPayload(raw: string) {
+  try {
+    const parsed = JSON.parse(raw) as { date: string; data: PersistedState };
+    // Yesterday's assignments are not today's operations; start the day clean.
+    if (parsed.date !== todayIso()) return;
+    state = { ...state, ...parsed.data };
+    emit();
+  } catch {
+    // Ignore anything that is not a state payload we wrote.
+  }
+}
+
+function hydrate() {
+  if (hydrated || typeof window === "undefined") return;
+  hydrated = true;
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) applyPayload(raw);
+  } catch {
+    // Private mode and blocked storage both fall back to the seeded state.
+  }
+
+  // Another tab changed something: adopt it. This is what makes the admin dashboard and
+  // the citizen app agree without a server between them.
+  try {
+    channel = new BroadcastChannel(CHANNEL);
+    channel.onmessage = (event: MessageEvent<string>) => applyPayload(event.data);
+  } catch {
+    channel = null;
+  }
+  window.addEventListener("storage", (event) => {
+    if (event.key === STORAGE_KEY && event.newValue) applyPayload(event.newValue);
+  });
+}
+
+function setState(patch: Partial<StoreState>, options: { persist?: boolean } = {}) {
   state = { ...state, ...patch };
+  if (options.persist !== false) persist();
   emit();
 }
 
@@ -112,28 +177,38 @@ function log(eventType: VehicleLogEvent, description: string, vehicleId: string 
   };
 }
 
+function activeSessions(): WorkSession[] {
+  return state.sessions.filter((session) => session.status === "ACTIVE");
+}
+
 export const store = {
   subscribe(listener: () => void): () => void {
+    hydrate();
     listeners.add(listener);
 
-    // Start the live feed with the first subscriber and stop it with the last.
-    if (!fleetUnsubscribe) {
+    if (!feedUnsubscribe) {
+      // Seed positions immediately so the first paint has a vehicle to draw.
       const seeded: Record<string, VehicleLocation> = {};
-      latestLocations().forEach((location) => {
-        seeded[location.vehicleId] = location;
+      activeSessions().forEach((session) => {
+        const location = locationFor(session);
+        if (location) seeded[session.vehicleId] = location;
       });
       state = { ...state, locations: seeded };
+      // Tell anyone already listening about the seeded positions, rather than leaving them
+      // to wait for the next tick.
+      queueMicrotask(emit);
 
-      fleetUnsubscribe = subscribeToFleet((location) => {
-        setState({ locations: { ...state.locations, [location.vehicleId]: location } });
+      feedUnsubscribe = subscribeToSessions(activeSessions, (location) => {
+        // Positions are ephemeral: never persisted, never broadcast.
+        setState({ locations: { ...state.locations, [location.vehicleId]: location } }, { persist: false });
       });
     }
 
     return () => {
       listeners.delete(listener);
-      if (listeners.size === 0 && fleetUnsubscribe) {
-        fleetUnsubscribe();
-        fleetUnsubscribe = null;
+      if (listeners.size === 0 && feedUnsubscribe) {
+        feedUnsubscribe();
+        feedUnsubscribe = null;
       }
     };
   },
@@ -162,18 +237,17 @@ export const store = {
     const existing = state.vehicles.find((v) => v.id === id);
     if (!existing) throw new ConflictError("That vehicle no longer exists.");
 
+    let next = patch;
     if (patch.vehicleNumber) {
       const number = patch.vehicleNumber.trim().toUpperCase();
       if (state.vehicles.some((v) => v.id !== id && v.vehicleNumber.toUpperCase() === number)) {
         throw new ConflictError("This vehicle number is already registered.");
       }
-      patch = { ...patch, vehicleNumber: number };
+      next = { ...patch, vehicleNumber: number };
     }
 
     log("VEHICLE_UPDATED", `Admin updated ${existing.vehicleNumber}.`, id);
-    setState({
-      vehicles: state.vehicles.map((v) => (v.id === id ? { ...v, ...patch } : v)),
-    });
+    setState({ vehicles: state.vehicles.map((v) => (v.id === id ? { ...v, ...next } : v)) });
   },
 
   setVehicleActive(id: string, active: boolean, reason?: string): void {
@@ -204,17 +278,15 @@ export const store = {
 
     log(
       "VEHICLE_ABSENT",
-      `Admin marked ${vehicle?.vehicleNumber ?? "vehicle"} absent for ${
-        route?.routeName ?? "route"
-      }${reason ? ` — ${reason}` : ""}.`,
+      `Admin marked ${vehicle?.vehicleNumber ?? "vehicle"} absent for ${route?.routeName ?? "route"}${
+        reason ? ` — ${reason}` : ""
+      }.`,
       assignment.vehicleId,
     );
 
     setState({
       assignments: state.assignments.map((a) =>
-        a.id === assignmentId
-          ? { ...a, status: "ABSENT", isAbsent: true, absenceReason: reason }
-          : a,
+        a.id === assignmentId ? { ...a, status: "ABSENT", isAbsent: true, absenceReason: reason } : a,
       ),
       // An absent assignment must not leave a session running behind it.
       sessions: state.sessions.map((s) =>
@@ -233,9 +305,7 @@ export const store = {
     log("VEHICLE_ASSIGNED", `Admin restored ${vehicle?.vehicleNumber ?? "vehicle"} to its route.`, assignment.vehicleId);
     setState({
       assignments: state.assignments.map((a) =>
-        a.id === assignmentId
-          ? { ...a, status: "SCHEDULED", isAbsent: false, absenceReason: null }
-          : a,
+        a.id === assignmentId ? { ...a, status: "SCHEDULED", isAbsent: false, absenceReason: null } : a,
       ),
     });
   },
@@ -248,7 +318,10 @@ export const store = {
     assignmentDate: string;
   }): Assignment {
     const sameDay = state.assignments.filter(
-      (a) => a.assignmentDate === input.assignmentDate && a.status !== "CANCELLED" && a.status !== "COMPLETED",
+      (a) =>
+        a.assignmentDate === input.assignmentDate &&
+        a.status !== "CANCELLED" &&
+        a.status !== "COMPLETED",
     );
 
     const vehicle = state.vehicles.find((v) => v.id === input.vehicleId);
@@ -288,7 +361,11 @@ export const store = {
     if (!assignment) return;
     const vehicle = state.vehicles.find((v) => v.id === assignment.vehicleId);
 
-    log("VEHICLE_UNASSIGNED", `Admin cancelled the assignment for ${vehicle?.vehicleNumber ?? "vehicle"}.`, assignment.vehicleId);
+    log(
+      "VEHICLE_UNASSIGNED",
+      `Admin cancelled the assignment for ${vehicle?.vehicleNumber ?? "vehicle"}.`,
+      assignment.vehicleId,
+    );
     setState({
       assignments: state.assignments.map((a) =>
         a.id === assignmentId ? { ...a, status: "CANCELLED" } : a,
@@ -310,9 +387,7 @@ export const store = {
   },
 
   addWard(input: Omit<Ward, "id">): Ward {
-    if (
-      state.wards.some((w) => w.areaId === input.areaId && w.wardNumber === input.wardNumber)
-    ) {
+    if (state.wards.some((w) => w.areaId === input.areaId && w.wardNumber === input.wardNumber)) {
       throw new ConflictError("This ward number already exists in that area.");
     }
     const ward: Ward = { ...input, id: `ward-${Date.now()}` };
@@ -332,6 +407,42 @@ export const store = {
     return route;
   },
 
+  /** Stands in for the worker pressing Start Work, until the Flutter app exists. */
+  startSession(assignmentId: string): void {
+    const assignment = state.assignments.find((a) => a.id === assignmentId);
+    if (!assignment) return;
+    if (assignment.isAbsent) {
+      throw new ConflictError("This vehicle is marked absent today. Restore it before starting work.");
+    }
+
+    const vehicle = state.vehicles.find((v) => v.id === assignment.vehicleId);
+    const existing = state.sessions.find((s) => s.assignmentId === assignmentId);
+    const startedAt = new Date().toISOString();
+
+    const session: WorkSession = existing
+      ? { ...existing, status: "ACTIVE", startedAt, endedAt: null }
+      : {
+          id: `ses-${Date.now()}`,
+          assignmentId,
+          vehicleId: assignment.vehicleId,
+          workerId: assignment.workerId,
+          routeId: assignment.routeId,
+          startedAt,
+          endedAt: null,
+          status: "ACTIVE",
+        };
+
+    log("WORK_STARTED", `${vehicle?.vehicleNumber ?? "Vehicle"} started its route.`, assignment.vehicleId);
+    setState({
+      sessions: existing
+        ? state.sessions.map((s) => (s.id === existing.id ? session : s))
+        : [...state.sessions, session],
+      assignments: state.assignments.map((a) =>
+        a.id === assignmentId ? { ...a, status: "ACTIVE" } : a,
+      ),
+    });
+  },
+
   endSession(sessionId: string): void {
     const session = state.sessions.find((s) => s.id === sessionId);
     if (!session) return;
@@ -347,6 +458,11 @@ export const store = {
       ),
     });
   },
-};
 
-export const today = todayIso;
+  /** Returns the dashboard and the citizen app to the seeded operating day. */
+  reset(): void {
+    state = seedState();
+    persist();
+    emit();
+  },
+};

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDay } from "@/lib/time";
+import { formatDay } from "@swachhata/core";
 
 interface CollectionTrendProps {
   data: { date: string; collectedKg: number }[];

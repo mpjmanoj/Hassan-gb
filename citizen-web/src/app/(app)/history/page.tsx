@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { CollectionRecord } from "@/types/domain";
-import { getDataService } from "@/lib/data";
+import type { CollectionRecord } from "@swachhata/core";
+import { getDataService } from "@swachhata/core";
 import { useSession } from "@/features/auth/session-provider";
-import { formatClock, formatDay } from "@/lib/time";
+import { formatClock, formatDay } from "@swachhata/core";
 
 export default function HistoryPage() {
   const { citizen } = useSession();

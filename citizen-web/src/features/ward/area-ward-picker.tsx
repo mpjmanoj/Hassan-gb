@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Area, Ward } from "@/types/domain";
-import { getDataService } from "@/lib/data";
+import type { Area, Ward } from "@swachhata/core";
+import { getDataService } from "@swachhata/core";
 
 interface AreaWardPickerProps {
   areaId: string | null;

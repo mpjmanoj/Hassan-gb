@@ -1,8 +1,8 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import type { Citizen } from "@/types/domain";
-import { getDataService } from "@/lib/data";
+import type { Citizen } from "@swachhata/core";
+import { getDataService } from "@swachhata/core";
 
 const SESSION_KEY = "swachhata.session";
 
