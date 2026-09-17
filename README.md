@@ -12,7 +12,7 @@ know when it is coming.
 | Path | What it is | Status |
 | --- | --- | --- |
 | `citizen-web/` | Citizen PWA — Next.js, TypeScript, Tailwind | Built |
-| `admin-web/` | Admin fleet dashboard — Next.js, TypeScript, Tailwind | Next |
+| `admin-web/` | Admin fleet dashboard — Next.js, TypeScript, Tailwind | Built |
 | `worker-app/` | Worker GPS app — Flutter | Not started |
 | `supabase/` | Database, RLS, realtime, edge functions | Not started |
 
@@ -43,4 +43,17 @@ Every data access goes through `getDataService()` in `citizen-web/src/lib/data`.
 Supabase implementation there and setting `NEXT_PUBLIC_DATA_SOURCE=supabase` switches the
 whole app over — no component changes.
 
-See `docs/` for the product decisions that shaped the front end.
+## Running the admin dashboard
+
+```bash
+cd admin-web
+cp .env.example .env.local
+npm install
+npm run dev -- -p 3001
+```
+
+Any valid email and a six-character password opens the dashboard. It runs on an in-memory
+store, so a page reload returns it to the seeded state.
+
+See [`docs/frontend-architecture.md`](docs/frontend-architecture.md) for the decisions
+behind both apps and what the backend needs to take over.
