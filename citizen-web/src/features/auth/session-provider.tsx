@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Citizen } from "@swachhata/core";
 import { getDataService } from "@/lib/data";
-import { DATA_SOURCE } from "@/lib/config";
+import { AUTH_MODE, DATA_SOURCE } from "@/lib/config";
 import { getSupabaseClient } from "@/lib/supabase";
 
 const SESSION_KEY = "swachhata.session";
@@ -56,7 +56,29 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
 
     const client = getSupabaseClient();
-    void client.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null));
+
+    void client.auth.getSession().then(async ({ data }) => {
+      // No OTP yet: a resident is signed in anonymously and goes straight to ward selection.
+      if (!data.session && AUTH_MODE === "anonymous") {
+        try {
+          const service = getDataService();
+          if ("signInAnonymously" in service) {
+            const citizen = await (
+              service as { signInAnonymously: () => Promise<Citizen> }
+            ).signInAnonymously();
+            if (!cancelled) {
+              setCitizen(citizen);
+              setReady(true);
+            }
+            return;
+          }
+        } catch {
+          if (!cancelled) setReady(true);
+          return;
+        }
+      }
+      await load(data.session?.user.id ?? null);
+    });
 
     // A token refresh, a sign-out in another tab, or an expired session all land here.
     const { data: listener } = client.auth.onAuthStateChange((event, session) => {

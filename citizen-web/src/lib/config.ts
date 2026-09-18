@@ -8,6 +8,15 @@ export const MAPS = {
   defaultZoom: DEFAULT_ZOOM,
 } as const;
 
+/**
+ * How people sign in when DATA_SOURCE is "supabase".
+ *   "anonymous" — a real token with no SMS. What the GPS pilot runs on.
+ *   "otp"       — phone + code, once the SMS provider and DLT template are live.
+ */
+export const AUTH_MODE = (process.env.NEXT_PUBLIC_AUTH_MODE ?? "anonymous") as
+  | "anonymous"
+  | "otp";
+
 /** "demo" runs on the shared in-browser store; "supabase" once the backend exists. */
 export const DATA_SOURCE = (process.env.NEXT_PUBLIC_DATA_SOURCE ?? "demo") as "demo" | "supabase";
 export const isDemoData = DATA_SOURCE === "demo";

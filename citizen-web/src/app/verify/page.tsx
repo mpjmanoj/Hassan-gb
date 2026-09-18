@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { AuthLayout } from "@/features/auth/auth-layout";
 import { OtpInput } from "@/components/otp-input";
 import { getDataService, messageFor } from "@/lib/data";
+import { AUTH_MODE, DATA_SOURCE } from "@/lib/config";
 import { useSession } from "@/features/auth/session-provider";
 import { PENDING_PHONE_KEY } from "@/features/auth/keys";
 import { isDemoData } from "@/lib/config";
@@ -21,6 +22,10 @@ export default function VerifyPage() {
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
 
   useEffect(() => {
+    if (DATA_SOURCE === "supabase" && AUTH_MODE === "anonymous") {
+      router.replace("/setup");
+      return;
+    }
     const pending = window.sessionStorage.getItem(PENDING_PHONE_KEY);
     if (!pending) {
       router.replace("/login");

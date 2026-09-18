@@ -1,13 +1,19 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AuthLayout } from "@/features/auth/auth-layout";
 import { getDataService, messageFor } from "@/lib/data";
+import { AUTH_MODE, DATA_SOURCE } from "@/lib/config";
 import { PENDING_PHONE_KEY } from "@/features/auth/keys";
 
 export default function LoginPage() {
   const router = useRouter();
+  const skipSignIn = DATA_SOURCE === "supabase" && AUTH_MODE === "anonymous";
+
+  useEffect(() => {
+    if (skipSignIn) router.replace("/setup");
+  }, [skipSignIn, router]);
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);

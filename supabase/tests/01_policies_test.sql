@@ -77,7 +77,9 @@ create temporary table test_ids as
 select
   (select a.id from assignments a join workers w on w.id = a.worker_id where w.name = 'Ramesh') as ramesh_assignment,
   (select a.id from assignments a join workers w on w.id = a.worker_id
-    join wards wd on wd.id = a.ward_id where w.name = 'Ravi' and wd.ward_number = 5) as ravi_assignment;
+    join wards wd on wd.id = a.ward_id where w.name = 'Ravi' and wd.ward_number = 5) as ravi_assignment,
+  (select w.id from workers w where w.name = 'Ramesh') as ramesh_worker,
+  (select w.id from workers w where w.name = 'Ravi') as ravi_worker;
 grant select on test_ids to authenticated;
 
 -- ---------------------------------------------------------------- helpers
@@ -362,6 +364,8 @@ begin
       'record_locations', 'fleet_status',
       -- called by RLS policies, which are evaluated with the caller's privileges
       'current_worker_id', 'is_admin', 'citizen_ward_id',
+      -- Pilot-only device pairing. Both refuse unless an operator switches it on.
+      'link_me_to_worker', 'pairable_workers',
       'test_sign_in'
     )
     and not exists (
@@ -372,6 +376,55 @@ begin
     format('these functions are exposed to signed-in users but should not be: %s', v_leaked);
 end;
 $$;
+
+-- ================================================================ PILOT PAIRING
+--
+-- Pairing exists so a device can be tied to a worker before OTP is live. It must be inert
+-- until an operator deliberately switches it on, and it must never expose the crew list.
+
+set local role authenticated;
+select test_sign_in('33333333-3333-3333-3333-333333333333');  -- an ordinary resident
+
+do $$
+declare
+  v_worker uuid := (select ramesh_worker from test_ids);
+begin
+  assert pairable_workers() = '[]'::jsonb,
+    'the crew list is visible while pairing is switched off';
+
+  begin
+    perform link_me_to_worker(v_worker);
+    assert false, 'a device paired itself to a worker while pairing was switched off';
+  exception when insufficient_privilege then null;
+  end;
+end;
+$$;
+
+reset role;
+update app_settings set value = 'true'::jsonb where key = 'allow_worker_self_link';
+
+set local role authenticated;
+select test_sign_in('33333333-3333-3333-3333-333333333333');
+do $$
+declare
+  v_worker uuid := (select ramesh_worker from test_ids);
+  v_result jsonb;
+begin
+  assert jsonb_array_length(pairable_workers()) = 2, 'pairing is on but no workers are offered';
+
+  v_result := link_me_to_worker(v_worker);
+  assert v_result ->> 'name' = 'Ramesh', 'pairing returned the wrong worker';
+  assert current_worker_id() = v_worker, 'the device was not recognised as that worker';
+
+  -- Pairing to a second worker must release the first, never hold both.
+  perform link_me_to_worker((select ravi_worker from test_ids));
+  assert (select count(*) from workers where auth_user_id = auth.uid()) = 1,
+    'one device ended up holding two worker records';
+end;
+$$;
+
+reset role;
+update app_settings set value = 'false'::jsonb where key = 'allow_worker_self_link';
 
 select 'ALL POLICY AND INVARIANT TESTS PASSED' as result;
 

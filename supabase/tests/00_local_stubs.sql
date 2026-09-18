@@ -34,6 +34,11 @@ begin
 end;
 $$;
 
+-- Supabase lets signed-in roles call auth.uid() directly; policies and app code both do.
+grant usage on schema auth to anon, authenticated;
+grant execute on function auth.uid(), auth.role() to anon, authenticated;
+grant select on auth.users to anon, authenticated;
+
 /**
  * Supabase grants anon and authenticated EXECUTE on every function created in `public`,
  * through default privileges. Without this line the local database is *safer* than the real

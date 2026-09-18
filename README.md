@@ -31,6 +31,13 @@ npm run dev:citizen  # citizen app on :3000
 Open both in two tabs and try it: mark a vehicle absent in the dashboard and the resident
 tracking that ward sees "Today's collection vehicle is unavailable" without reloading.
 
+### Testing real GPS today
+
+[`docs/gps-pilot.md`](docs/gps-pilot.md) has the whole procedure: getting the Google Maps
+key, switching the apps to the database, and driving a route with a phone at `/worker` while
+another watches the map. No OTP and no Flutter app needed — anonymous sign-in issues a real
+token, so every security rule still applies.
+
 ### Switching to the real database
 
 Once the migrations in `supabase/` are applied and phone auth is configured:

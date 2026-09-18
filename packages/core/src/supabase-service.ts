@@ -351,9 +351,48 @@ export function createSupabaseDataService(client: SupabaseClient) {
       return {
         id: data.id as string,
         name: (data.name as string) ?? "",
-        phone: data.phone as string,
+        phone: (data.phone as string | null) ?? "",
         areaId: (data.area_id as string | null) ?? null,
         wardId: (data.ward_id as string | null) ?? null,
+      };
+    },
+
+    /**
+     * Anonymous sign-in: a real token, no SMS. The resident picks a ward and is tracked
+     * like any other; a phone number is collected later, when OTP is live.
+     */
+    async signInAnonymously(): Promise<Citizen> {
+      const { data } = await client.auth.getSession();
+      let userId = data.session?.user.id ?? null;
+
+      if (!userId) {
+        const { data: created, error } = await client.auth.signInAnonymously();
+        if (error || !created.user) {
+          throw translateError(
+            error,
+            "Could not start a session. Check that anonymous sign-ins are enabled for this project.",
+          );
+        }
+        userId = created.user.id;
+      }
+
+      const existing = await this.getCitizen(userId);
+      if (existing) return existing;
+
+      // The sign-up trigger only creates a row for a phone sign-in, so make one here.
+      const { data: inserted, error: insertError } = await client
+        .from("citizens")
+        .insert({ id: userId })
+        .select("id, name, phone, area_id, ward_id")
+        .single();
+      if (insertError) throw translateError(insertError, "Could not start your profile.");
+
+      return {
+        id: inserted.id as string,
+        name: (inserted.name as string) ?? "",
+        phone: (inserted.phone as string | null) ?? "",
+        areaId: null,
+        wardId: null,
       };
     },
 
@@ -369,7 +408,7 @@ export function createSupabaseDataService(client: SupabaseClient) {
       return {
         id: data.id as string,
         name: (data.name as string) ?? "",
-        phone: data.phone as string,
+        phone: (data.phone as string | null) ?? "",
         areaId: (data.area_id as string | null) ?? null,
         wardId: (data.ward_id as string | null) ?? null,
       };
