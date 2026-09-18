@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useStore } from "@/hooks/use-store";
-import { store } from "@swachhata/core";
+import { getOps } from "@/lib/ops";
 import { EmptyState, Field, Modal, PageHeader } from "@/components/ui";
 
 export default function AreasPage() {
@@ -52,9 +52,16 @@ export default function AreasPage() {
         <form
           onSubmit={(event) => {
             event.preventDefault();
-            store.addArea({ name: name.trim(), jurisdictionId: "jur-hassan", status: "ACTIVE" });
-            setName("");
-            setAdding(false);
+            void getOps()
+              .addArea({
+                name: name.trim(),
+                jurisdictionId: state.areas[0]?.jurisdictionId ?? "",
+                status: "ACTIVE",
+              })
+              .then(() => {
+                setName("");
+                setAdding(false);
+              });
           }}
           className="space-y-4"
         >

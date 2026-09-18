@@ -31,7 +31,32 @@ npm run dev:citizen  # citizen app on :3000
 Open both in two tabs and try it: mark a vehicle absent in the dashboard and the resident
 tracking that ward sees "Today's collection vehicle is unavailable" without reloading.
 
-### How they are connected today
+### Switching to the real database
+
+Once the migrations in `supabase/` are applied and phone auth is configured:
+
+1. Put your project URL and **anon** key in `citizen-web/.env.local` and `admin-web/.env.local`
+   (copy each `.env.example`). The service role key goes nowhere near these apps.
+2. Set `NEXT_PUBLIC_DATA_SOURCE=supabase` in both.
+3. Restart both dev servers.
+
+Nothing else changes: `citizen-web/src/lib/data.ts` and `admin-web/src/lib/ops.ts` pick the
+implementation, and no screen knows which one answered.
+
+**First run checklist** — these are the things that bite, in the order they bite:
+
+- Sign-in fails with no SMS → phone provider not connected in Supabase, or the DLT template
+  is not approved yet.
+- The dashboard says the account is not registered for operations → you signed in
+  successfully but there is no row for you in `admins`. Add it (see `supabase/README.md`).
+- Ward list is empty → no wards seeded yet.
+- A ward shows "no collection route assigned" → correct, until you create an assignment
+  for today in the dashboard.
+- The map never goes live → no worker has started a session yet. Until the Flutter app
+  exists, nothing writes GPS, so every ward reads NOT STARTED. That is the system being
+  honest, not a bug.
+
+### How they are connected in demo mode
 
 Both apps import `@swachhata/core`, which holds one operational store. The dashboard writes
 to it, the citizen app reads from it, and changes reach every open tab through

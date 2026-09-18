@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { AuthLayout } from "@/features/auth/auth-layout";
-import { getDataService, ServiceError } from "@swachhata/core";
+import { getDataService, messageFor } from "@/lib/data";
 import { PENDING_PHONE_KEY } from "@/features/auth/keys";
 
 export default function LoginPage() {
@@ -25,11 +25,7 @@ export default function LoginPage() {
       window.sessionStorage.setItem(PENDING_PHONE_KEY, phone);
       router.push("/verify");
     } catch (caught) {
-      setError(
-        caught instanceof ServiceError
-          ? caught.message
-          : "We could not send the code right now. Please try again.",
-      );
+      setError(messageFor(caught, "We could not send the code right now. Please try again."));
       setSubmitting(false);
     }
   };

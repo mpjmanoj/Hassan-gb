@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useStore } from "@/hooks/use-store";
 import { fleetRows } from "@swachhata/core";
-import { ConflictError, store } from "@swachhata/core";
+import { getOps, messageFor } from "@/lib/ops";
 import { EmptyState, ErrorNote, Field, Modal, PageHeader } from "@/components/ui";
 import { relativeTime, todayIso } from "@swachhata/core";
 
@@ -17,18 +17,16 @@ export default function WorkersPage() {
 
   const today = todayIso();
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     try {
-      store.addWorker({ name: name.trim(), phone, status: "ACTIVE" });
+      await getOps().addWorker({ name: name.trim(), phone, status: "ACTIVE" });
       setAdding(false);
       setName("");
       setPhone("");
       setError(null);
     } catch (caught) {
-      setError(
-        caught instanceof ConflictError ? caught.message : "We could not add that worker.",
-      );
+      setError(messageFor(caught, "We could not add that worker."));
     }
   };
 
@@ -107,10 +105,14 @@ export default function WorkersPage() {
                       <button
                         type="button"
                         onClick={() =>
-                          store.setWorkerStatus(
-                            worker.id,
-                            worker.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
-                          )
+                          void getOps()
+                            .setWorkerStatus(
+                              worker.id,
+                              worker.status === "ACTIVE" ? "INACTIVE" : "ACTIVE",
+                            )
+                            .catch((caught) =>
+                              setError(messageFor(caught, "We could not update that worker.")),
+                            )
                         }
                         className="text-[13px] font-semibold text-brand hover:text-brand-dark"
                       >
@@ -126,7 +128,7 @@ export default function WorkersPage() {
       )}
 
       <Modal open={adding} title="Add worker" onClose={() => setAdding(false)}>
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={(event) => void submit(event)} className="space-y-4">
           <Field label="Name">
             <input value={name} onChange={(event) => setName(event.target.value)} className="field" />
           </Field>

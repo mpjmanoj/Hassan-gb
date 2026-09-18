@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useStore } from "@/hooks/use-store";
-import { ConflictError, store } from "@swachhata/core";
+import { getOps, messageFor } from "@/lib/ops";
 import { EmptyState, ErrorNote, Field, Modal, PageHeader } from "@/components/ui";
 
 export default function WardsPage() {
@@ -82,10 +82,10 @@ export default function WardsPage() {
 
       <Modal open={dialog === "ward"} title="Add ward" onClose={close}>
         <form
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
             try {
-              store.addWard({
+              await getOps().addWard({
                 areaId,
                 wardNumber: Number(wardNumber),
                 name: wardName.trim(),
@@ -95,7 +95,7 @@ export default function WardsPage() {
               setWardName("");
               close();
             } catch (caught) {
-              setError(caught instanceof ConflictError ? caught.message : "We could not add that ward.");
+              setError(messageFor(caught, "We could not add that ward."));
             }
           }}
           className="space-y-4"
@@ -136,16 +136,20 @@ export default function WardsPage() {
 
       <Modal open={dialog === "route"} title="Add route" onClose={close}>
         <form
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
-            store.addRoute({
-              wardId: routeWardId,
-              routeName: routeName.trim(),
-              routeGeometry: [],
-              status: "ACTIVE",
-            });
-            setRouteName("");
-            close();
+            try {
+              await getOps().addRoute({
+                wardId: routeWardId,
+                routeName: routeName.trim(),
+                routeGeometry: [],
+                status: "ACTIVE",
+              });
+              setRouteName("");
+              close();
+            } catch (caught) {
+              setError(messageFor(caught, "We could not add that route."));
+            }
           }}
           className="space-y-4"
         >

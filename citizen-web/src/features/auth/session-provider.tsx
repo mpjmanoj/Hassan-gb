@@ -2,7 +2,9 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { Citizen } from "@swachhata/core";
-import { getDataService } from "@swachhata/core";
+import { getDataService } from "@/lib/data";
+import { DATA_SOURCE } from "@/lib/config";
+import { getSupabaseClient } from "@/lib/supabase";
 
 const SESSION_KEY = "swachhata.session";
 
@@ -11,7 +13,7 @@ interface SessionValue {
   /** False until the stored session has been read — guards must wait for this. */
   ready: boolean;
   signIn: (citizen: Citizen) => void;
-  signOut: () => void;
+  signOut: () => Promise<void>;
   update: (patch: Partial<Pick<Citizen, "name" | "areaId" | "wardId">>) => Promise<void>;
 }
 
@@ -21,13 +23,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [citizen, setCitizen] = useState<Citizen | null>(null);
   const [ready, setReady] = useState(false);
 
+  /**
+   * Who is signed in comes from Supabase when it is wired up, and from a stored id in the
+   * demo build. Either way the rest of the app only ever sees a Citizen or null.
+   */
   useEffect(() => {
     let cancelled = false;
 
-    async function restore() {
-      const citizenId = window.localStorage.getItem(SESSION_KEY);
+    const load = async (citizenId: string | null) => {
       if (!citizenId) {
-        if (!cancelled) setReady(true);
+        if (!cancelled) {
+          setCitizen(null);
+          setReady(true);
+        }
         return;
       }
       try {
@@ -38,34 +46,64 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       } finally {
         if (!cancelled) setReady(true);
       }
+    };
+
+    if (DATA_SOURCE !== "supabase") {
+      void load(window.localStorage.getItem(SESSION_KEY));
+      return () => {
+        cancelled = true;
+      };
     }
 
-    void restore();
+    const client = getSupabaseClient();
+    void client.auth.getSession().then(({ data }) => load(data.session?.user.id ?? null));
+
+    // A token refresh, a sign-out in another tab, or an expired session all land here.
+    const { data: listener } = client.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      if (event === "SIGNED_OUT") {
+        setCitizen(null);
+        setReady(true);
+        return;
+      }
+      if (session?.user.id) void load(session.user.id);
+    });
+
     return () => {
       cancelled = true;
+      listener.subscription.unsubscribe();
     };
   }, []);
 
   const signIn = useCallback((next: Citizen) => {
-    window.localStorage.setItem(SESSION_KEY, next.id);
+    // In Supabase mode the session already exists; this only primes the UI.
+    if (DATA_SOURCE !== "supabase") window.localStorage.setItem(SESSION_KEY, next.id);
     setCitizen(next);
+    setReady(true);
   }, []);
 
-  const signOut = useCallback(() => {
-    window.localStorage.removeItem(SESSION_KEY);
+  const signOut = useCallback(async () => {
+    if (DATA_SOURCE === "supabase") {
+      await getSupabaseClient().auth.signOut();
+    } else {
+      window.localStorage.removeItem(SESSION_KEY);
+    }
     setCitizen(null);
   }, []);
 
-  const update = useCallback<SessionValue["update"]>(
-    async (patch) => {
-      setCitizen((current) => (current ? { ...current, ...patch } : current));
-      const id = window.localStorage.getItem(SESSION_KEY);
-      if (!id) return;
-      const saved = await getDataService().updateCitizen(id, patch);
-      setCitizen(saved);
-    },
-    [],
-  );
+  const update = useCallback<SessionValue["update"]>(async (patch) => {
+    // Optimistic, so changing a ward feels instant; the saved row wins.
+    setCitizen((current) => (current ? { ...current, ...patch } : current));
+
+    const id =
+      DATA_SOURCE === "supabase"
+        ? (await getSupabaseClient().auth.getSession()).data.session?.user.id
+        : window.localStorage.getItem(SESSION_KEY);
+    if (!id) return;
+
+    const saved = await getDataService().updateCitizen(id, patch);
+    setCitizen(saved);
+  }, []);
 
   const value = useMemo<SessionValue>(
     () => ({ citizen, ready, signIn, signOut, update }),

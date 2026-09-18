@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "@swachhata/core": "*",
     "next": "15.5.4",
     "react": "19.1.1",

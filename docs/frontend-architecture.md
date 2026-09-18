@@ -34,23 +34,29 @@ fix arrives  →  GPS filter  →  marker animator  →  map marker
 The citizen app and the admin dashboard derive status with the same rules, so residents and
 operations staff can never see two different truths about one vehicle.
 
-## Swapping in Supabase
+## Two implementations, one surface
 
-`citizen-web/src/lib/data/` defines `DataService` and resolves it through
-`getDataService()`. Add a Supabase implementation there, set
-`NEXT_PUBLIC_DATA_SOURCE=supabase`, and no component changes.
+Both apps talk to an interface, never to a backend directly:
 
-The admin dashboard currently uses an in-memory store (`admin-web/src/lib/store.ts`) because
-its screens mutate data. It keeps the invariants the database will own — unique vehicle
-numbers, and no two live assignments for the same vehicle, worker or route on one day — so
-the same errors surface in the UI once the server enforces them for real.
+- The citizen app calls `getDataService()` from `citizen-web/src/lib/data.ts`.
+- The dashboard calls `getOps()` from `admin-web/src/lib/ops.ts`.
 
-## Known duplication
+Each resolves once, from `NEXT_PUBLIC_DATA_SOURCE`, to either the in-browser demo store or
+the Supabase client in `packages/core`. No screen knows which answered, which is why the
+whole backend swap is a one-line environment change.
 
-`types/domain.ts`, `lib/geo.ts`, `lib/time.ts` and the map primitives exist in both apps.
-That is deliberate for now: when the Supabase project is created it will generate shared
-types, and those files should move into one workspace package at that point rather than
-being kept in sync by hand.
+Errors follow the same rule. The demo store raises `ServiceError`/`ConflictError` and the
+Supabase layer raises `OperationError`; components ask `messageFor(error, fallback)` for a
+sentence instead of testing which class it is. `translateError` maps constraint names to
+those sentences, so a unique-violation on `vehicles_number_key` reads "This vehicle number
+is already registered." and an unrecognised failure shows the fallback rather than raw
+PostgREST text.
+
+## Where the shared code lives
+
+`packages/core` holds the domain types, the geo and time helpers, the demo store and feed,
+the status derivation, and both Supabase implementations. Both apps depend on it, so there
+is one definition of what a vehicle's status means.
 
 ## Maps
 

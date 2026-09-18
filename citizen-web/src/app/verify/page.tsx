@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AuthLayout } from "@/features/auth/auth-layout";
 import { OtpInput } from "@/components/otp-input";
-import { getDataService, ServiceError } from "@swachhata/core";
+import { getDataService, messageFor } from "@/lib/data";
 import { useSession } from "@/features/auth/session-provider";
 import { PENDING_PHONE_KEY } from "@/features/auth/keys";
 import { isDemoData } from "@/lib/config";
@@ -46,11 +46,7 @@ export default function VerifyPage() {
         signIn(citizen);
         router.replace(citizen.wardId ? "/home" : "/setup");
       } catch (caught) {
-        setError(
-          caught instanceof ServiceError
-            ? caught.message
-            : "Unable to verify your number. Please try again.",
-        );
+        setError(messageFor(caught, "Unable to verify your number. Please try again."));
         setCode("");
         setSubmitting(false);
       }

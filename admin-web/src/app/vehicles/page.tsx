@@ -5,7 +5,7 @@ import { useState } from "react";
 import type { Vehicle } from "@swachhata/core";
 import { useStore } from "@/hooks/use-store";
 import { fleetRows, type FleetRow } from "@swachhata/core";
-import { ConflictError, store } from "@swachhata/core";
+import { getOps, messageFor } from "@/lib/ops";
 import { StatusPill } from "@/components/status-pill";
 import { EmptyState, ErrorNote, Field, Modal, PageHeader } from "@/components/ui";
 import { relativeTime } from "@swachhata/core";
@@ -36,16 +36,12 @@ export default function VehiclesPage() {
   };
 
   // Every mutation goes through here so a rejected change shows a sentence, never a raw error.
-  const run = (action: () => void) => {
+  const run = async (action: () => Promise<void>) => {
     try {
-      action();
+      await action();
       close();
     } catch (caught) {
-      setError(
-        caught instanceof ConflictError
-          ? caught.message
-          : "We could not save that change. Please try again.",
-      );
+      setError(messageFor(caught, "We could not save that change. Please try again."));
     }
   };
 
@@ -126,7 +122,7 @@ export default function VehiclesPage() {
                       {row.assignment?.isAbsent ? (
                         <button
                           type="button"
-                          onClick={() => run(() => store.clearAbsence(row.assignment!.id))}
+                          onClick={() => void run(() => getOps().clearAbsence(row.assignment!.id))}
                           className="text-brand hover:text-brand-dark"
                         >
                           Restore
@@ -143,7 +139,7 @@ export default function VehiclesPage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => run(() => store.setVehicleActive(row.vehicle.id, true))}
+                          onClick={() => void run(() => getOps().setVehicleActive(row.vehicle.id, true))}
                           className="text-brand hover:text-brand-dark"
                         >
                           Return to service
@@ -178,7 +174,7 @@ function VehicleDialogs({
   dialog: Dialog;
   error: string | null;
   onClose: () => void;
-  onRun: (action: () => void) => void;
+  onRun: (action: () => Promise<void>) => Promise<void>;
 }) {
   return (
     <>
@@ -188,10 +184,10 @@ function VehicleDialogs({
         error={error}
         onClose={onClose}
         onSubmit={(values) =>
-          onRun(() =>
+          void onRun(() =>
             dialog.kind === "edit"
-              ? store.updateVehicle(dialog.vehicle.id, values)
-              : store.addVehicle({ ...values, active: true }),
+              ? getOps().updateVehicle(dialog.vehicle.id, values)
+              : getOps().addVehicle({ ...values, active: true }),
           )
         }
       />
@@ -202,9 +198,9 @@ function VehicleDialogs({
         error={error}
         onClose={onClose}
         onSubmit={(reason) =>
-          onRun(() => {
+          void onRun(async () => {
             if (dialog.kind === "absent" && dialog.row.assignment) {
-              store.markAssignmentAbsent(dialog.row.assignment.id, reason);
+              await getOps().markAssignmentAbsent(dialog.row.assignment.id, reason);
             }
           })
         }
@@ -216,8 +212,10 @@ function VehicleDialogs({
         error={error}
         onClose={onClose}
         onSubmit={(reason) =>
-          onRun(() => {
-            if (dialog.kind === "retire") store.setVehicleActive(dialog.vehicle.id, false, reason);
+          void onRun(async () => {
+            if (dialog.kind === "retire") {
+              await getOps().setVehicleActive(dialog.vehicle.id, false, reason);
+            }
           })
         }
       />

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useStore } from "@/hooks/use-store";
-import { ConflictError, store } from "@swachhata/core";
+import { getOps, messageFor } from "@/lib/ops";
 import { EmptyState, ErrorNote, Field, Modal, PageHeader } from "@/components/ui";
 import { todayIso } from "@swachhata/core";
 import type { Assignment } from "@swachhata/core";
@@ -20,6 +20,16 @@ export default function AssignmentsPage() {
   const [date, setDate] = useState(todayIso());
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Mutations can be refused by the database; the refusal is shown, never swallowed.
+  const run = async (action: () => Promise<void>) => {
+    try {
+      setError(null);
+      await action();
+    } catch (caught) {
+      setError(messageFor(caught, "We could not save that change. Please try again."));
+    }
+  };
 
   const rows = useMemo(
     () =>
@@ -46,6 +56,8 @@ export default function AssignmentsPage() {
           </button>
         }
       />
+
+      <ErrorNote message={error} />
 
       <div className="flex items-center gap-3">
         <label htmlFor="date" className="label">
@@ -109,7 +121,7 @@ export default function AssignmentsPage() {
                       {assignment.isAbsent ? (
                         <button
                           type="button"
-                          onClick={() => store.clearAbsence(assignment.id)}
+                          onClick={() => void run(() => getOps().clearAbsence(assignment.id))}
                           className="text-brand hover:text-brand-dark"
                         >
                           Restore
@@ -117,7 +129,7 @@ export default function AssignmentsPage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => store.markAssignmentAbsent(assignment.id, null)}
+                          onClick={() => void run(() => getOps().markAssignmentAbsent(assignment.id, null))}
                           className="text-warn hover:underline"
                         >
                           Mark absent
@@ -126,7 +138,7 @@ export default function AssignmentsPage() {
                       {assignment.status !== "CANCELLED" && assignment.status !== "COMPLETED" ? (
                         <button
                           type="button"
-                          onClick={() => store.cancelAssignment(assignment.id)}
+                          onClick={() => void run(() => getOps().cancelAssignment(assignment.id))}
                           className="text-danger hover:underline"
                         >
                           Cancel
@@ -183,24 +195,20 @@ function CreateAssignmentDialog({
 
   const complete = wardId && routeId && vehicleId && workerId && assignmentDate;
 
-  const submit = (event: React.FormEvent) => {
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!complete) return;
     try {
-      store.createAssignment({ routeId, wardId, vehicleId, workerId, assignmentDate });
+      await getOps().createAssignment({ routeId, wardId, vehicleId, workerId, assignmentDate });
       onClose();
     } catch (caught) {
-      onError(
-        caught instanceof ConflictError
-          ? caught.message
-          : "We could not create that assignment. Please try again.",
-      );
+      onError(messageFor(caught, "We could not create that assignment. Please try again."));
     }
   };
 
   return (
     <Modal open={open} title="Create assignment" onClose={onClose}>
-      <form onSubmit={submit} className="space-y-4">
+      <form onSubmit={(event) => void submit(event)} className="space-y-4">
         <Field label="Operating day">
           <input
             type="date"

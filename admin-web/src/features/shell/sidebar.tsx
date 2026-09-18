@@ -81,7 +81,7 @@ export function Sidebar() {
         <p className="truncate text-[12px] text-white/45">{admin?.email}</p>
         <button
           type="button"
-          onClick={signOut}
+          onClick={() => void signOut()}
           className="mt-3 text-[13px] font-semibold text-white/65 hover:text-white"
         >
           Sign out

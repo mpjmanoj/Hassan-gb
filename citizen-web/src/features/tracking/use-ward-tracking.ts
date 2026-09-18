@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { TrackingStateKind, VehicleLocation, WardTracking } from "@swachhata/core";
-import { getDataService, ServiceError } from "@swachhata/core";
+import { getDataService, messageFor } from "@/lib/data";
 import { TRACKING } from "@/lib/config";
 import { evaluateFix } from "@swachhata/core";
 
@@ -65,11 +65,7 @@ export function useWardTracking(wardId: string | null): WardTrackingResult {
         }
       } catch (caught) {
         if (cancelled) return;
-        setError(
-          caught instanceof ServiceError
-            ? caught.message
-            : "We could not load collection details. Please try again.",
-        );
+        setError(messageFor(caught, "We could not load collection details. Please try again."));
       } finally {
         if (!cancelled) setLoading(false);
       }

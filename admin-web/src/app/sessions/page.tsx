@@ -1,7 +1,7 @@
 "use client";
 
 import { useStore } from "@/hooks/use-store";
-import { store } from "@swachhata/core";
+import { getOps } from "@/lib/ops";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { formatClock, formatDuration } from "@swachhata/core";
 
@@ -80,7 +80,7 @@ export default function SessionsPage() {
                       {session.status === "ACTIVE" ? (
                         <button
                           type="button"
-                          onClick={() => store.endSession(session.id)}
+                          onClick={() => void getOps().endSession(session.id)}
                           className="text-[13px] font-semibold text-danger hover:underline"
                         >
                           End session

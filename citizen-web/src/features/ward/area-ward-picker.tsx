@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { Area, Ward } from "@swachhata/core";
-import { getDataService } from "@swachhata/core";
+import { getDataService } from "@/lib/data";
 
 interface AreaWardPickerProps {
   areaId: string | null;

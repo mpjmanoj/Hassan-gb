@@ -10,10 +10,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
+    "@swachhata/core": "*",
     "next": "15.5.4",
     "react": "19.1.1",
-    "react-dom": "19.1.1",
-    "@swachhata/core": "*"
+    "react-dom": "19.1.1"
   },
   "devDependencies": {
     "@types/google.maps": "^3.66.3",

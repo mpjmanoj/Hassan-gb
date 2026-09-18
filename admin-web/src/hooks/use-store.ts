@@ -1,8 +1,10 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import { store, type StoreState } from "@swachhata/core";
+import type { StoreState } from "@swachhata/core";
+import { getOps } from "@/lib/ops";
 
 export function useStore(): StoreState {
-  return useSyncExternalStore(store.subscribe, store.getSnapshot, store.getServerSnapshot);
+  const ops = getOps();
+  return useSyncExternalStore(ops.subscribe, ops.getSnapshot, ops.getServerSnapshot);
 }

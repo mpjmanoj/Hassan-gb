@@ -5,6 +5,7 @@ import { Sidebar } from "@/features/shell/sidebar";
 import { useAdminSession } from "@/features/auth/admin-session";
 import { LogoMark, Wordmark } from "@/components/logo";
 import { ErrorNote } from "@/components/ui";
+import { isDemoData } from "@/lib/config";
 
 function SignIn() {
   const { signIn } = useAdminSession();
@@ -12,7 +13,9 @@ function SignIn() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const submit = (event: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!/^\S+@\S+\.\S+$/.test(email)) {
       setError("Enter the email address issued to you by the municipality.");
@@ -22,12 +25,20 @@ function SignIn() {
       setError("Enter your password.");
       return;
     }
-    signIn(email);
+
+    setSubmitting(true);
+    setError(null);
+    try {
+      await signIn(email, password);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "We could not sign you in.");
+      setSubmitting(false);
+    }
   };
 
   return (
     <main className="grid min-h-dvh place-items-center bg-surface-muted px-4">
-      <form onSubmit={submit} className="card w-full max-w-[400px] p-8">
+      <form onSubmit={(event) => void submit(event)} className="card w-full max-w-[400px] p-8">
         <Wordmark />
         <h1 className="mt-7 text-[22px] font-bold tracking-tight">Operations sign in</h1>
         <p className="mt-1.5 text-[14px] leading-relaxed text-ink-muted">
@@ -59,13 +70,15 @@ function SignIn() {
           <ErrorNote message={error} />
         </div>
 
-        <button type="submit" className="btn-primary mt-6 w-full">
-          Sign in
+        <button type="submit" disabled={submitting} className="btn-primary mt-6 w-full">
+          {submitting ? "Signing in…" : "Sign in"}
         </button>
-        <p className="mt-4 text-[12px] leading-relaxed text-ink-muted">
-          Design build — any valid email and a 6-character password opens the dashboard.
-          Real sign-in is enforced server-side once the backend is connected.
-        </p>
+        {isDemoData ? (
+          <p className="mt-4 text-[12px] leading-relaxed text-ink-muted">
+            Demo build — any valid email and a 6-character password opens the dashboard.
+            Against the real database, only accounts registered for operations get in.
+          </p>
+        ) : null}
       </form>
     </main>
   );

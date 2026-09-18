@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { CollectionRecord } from "@swachhata/core";
-import { getDataService } from "@swachhata/core";
+import { getDataService } from "@/lib/data";
 import { useSession } from "@/features/auth/session-provider";
 import { formatClock, formatDay } from "@swachhata/core";
 

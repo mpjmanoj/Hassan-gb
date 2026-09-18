@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import type { Area, Ward } from "@swachhata/core";
 import { useSession } from "@/features/auth/session-provider";
 import { AreaWardPicker } from "@/features/ward/area-ward-picker";
-import { getDataService } from "@swachhata/core";
+import { getDataService } from "@/lib/data";
 import { Wordmark } from "@/components/logo";
 
 export default function ProfilePage() {
@@ -129,8 +129,8 @@ export default function ProfilePage() {
 
       <button
         type="button"
-        onClick={() => {
-          signOut();
+        onClick={async () => {
+          await signOut();
           router.replace("/");
         }}
         className="btn-secondary mt-4 w-full text-danger"

@@ -23,13 +23,20 @@ import { activeCitizenCount, dailySummaries, householdCollections } from "./fixt
  * client is the whole backend integration on the citizen side.
  */
 
+export type ServiceErrorCode =
+  | "INVALID_OTP"
+  | "OTP_EXPIRED"
+  | "NOT_FOUND"
+  | "NETWORK"
+  | "UNKNOWN";
+
 export class ServiceError extends Error {
-  constructor(
-    message: string,
-    readonly code: "INVALID_OTP" | "OTP_EXPIRED" | "NOT_FOUND" | "NETWORK" | "UNKNOWN" = "UNKNOWN",
-  ) {
+  readonly code: ServiceErrorCode;
+
+  constructor(message: string, code: ServiceErrorCode = "UNKNOWN") {
     super(message);
     this.name = "ServiceError";
+    this.code = code;
   }
 }
 
