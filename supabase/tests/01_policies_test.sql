@@ -241,7 +241,13 @@ begin
     'the running session survived an absence';
   assert (select count(*) from vehicle_current_location where vehicle_id = v_v3) = 0,
     'an absent vehicle still exposes a position';
-  assert derive_tracking_state(v_asg) = 'ABSENT', 'absent assignment did not derive as ABSENT';
+
+  -- Through the admin's own RPC, not the internal helper: staff have no EXECUTE on that.
+  v_fleet := fleet_status();
+  assert exists (
+    select 1 from jsonb_array_elements(v_fleet) row
+    where row ->> 'vehicle_number' = 'HSN-003' and row ->> 'status' = 'ABSENT'
+  ), 'the fleet view did not report HSN-003 as absent';
 
   -- The audit trail recorded it.
   assert exists (select 1 from vehicle_logs where event_type = 'VEHICLE_ABSENT'),
@@ -317,6 +323,53 @@ begin
   where work_session_id = v_ses;
   assert derive_tracking_state(v_asg) = 'CONNECTION_LOST',
     'a stale fix still reads LIVE — the freshness rule is not working';
+end;
+$$;
+
+-- ================================================================ API SURFACE
+--
+-- Postgres grants EXECUTE to PUBLIC by default and PostgREST publishes the public schema,
+-- so anything not explicitly revoked is reachable at /rest/v1/rpc/<name>. These two
+-- bypass RLS, so an anonymous caller holding EXECUTE could read a ward's status without
+-- signing in. This is the regression test for exactly that.
+
+do $$
+declare
+  v_leaked text;
+begin
+  select string_agg(p.proname, ', ') into v_leaked
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and has_function_privilege('anon', p.oid, 'EXECUTE')
+    and p.proname <> 'test_sign_in'
+    -- Extension-owned functions (pgcrypto and friends) are not ours to grant or revoke.
+    and not exists (
+      select 1 from pg_depend d
+      where d.objid = p.oid and d.deptype = 'e'
+    );
+  assert v_leaked is null,
+    format('these functions are callable without signing in: %s', v_leaked);
+
+  -- Signed-in users get the RPCs their app calls, and nothing else.
+  select string_agg(p.proname, ', ') into v_leaked
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and has_function_privilege('authenticated', p.oid, 'EXECUTE')
+    and p.proname not in (
+      'ward_tracking', 'my_assignment_today', 'start_work_session', 'end_work_session',
+      'record_locations', 'fleet_status',
+      -- called by RLS policies, which are evaluated with the caller's privileges
+      'current_worker_id', 'is_admin', 'citizen_ward_id',
+      'test_sign_in'
+    )
+    and not exists (
+      select 1 from pg_depend d
+      where d.objid = p.oid and d.deptype = 'e'
+    );
+  assert v_leaked is null,
+    format('these functions are exposed to signed-in users but should not be: %s', v_leaked);
 end;
 $$;
 

@@ -34,6 +34,15 @@ begin
 end;
 $$;
 
+/**
+ * Supabase grants anon and authenticated EXECUTE on every function created in `public`,
+ * through default privileges. Without this line the local database is *safer* than the real
+ * one, and a missing revoke passes here and fails in production — which is exactly what
+ * happened once already.
+ */
+alter default privileges in schema public grant execute on functions to anon, authenticated;
+alter default privileges in schema public grant select on tables to anon, authenticated;
+
 -- Supabase creates this publication for Realtime; the migrations add tables to it.
 do $$
 begin

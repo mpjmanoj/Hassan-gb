@@ -1,6 +1,6 @@
 # Swachhata Hasan — database
 
-Four migrations, applied in filename order. Everything the apps are allowed to do to
+Six migrations, applied in filename order. Everything the apps are allowed to do to
 tracking data goes through the RPCs in `20260918000200_functions.sql`; no client can write
 a GPS position directly.
 
@@ -54,6 +54,20 @@ on. It is for local testing only — never run it against your project.
 | `…000200_functions.sql` | Identity helpers, status derivation, the worker and read RPCs |
 | `…000300_triggers.sql` | Sign-up linking, operational guards, the audit trail |
 | `…000400_rls.sql` | Row Level Security, grants, the Realtime publication |
+| `…000500_harden_function_grants.sql` | Revokes the default PUBLIC execute on everything not meant to be an API |
+| `…000600_policy_performance.sql` | Per-query helper evaluation in policies, covering indexes on foreign keys |
+
+## Run the linter after any schema change
+
+```
+Supabase dashboard → Advisors → Security / Performance
+```
+
+It catches what the test suite cannot see, and it already caught one real hole here:
+Postgres grants EXECUTE on a new function to PUBLIC and PostgREST publishes the whole
+`public` schema, so every function is an API endpoint until it is revoked by name. Two
+SECURITY DEFINER helpers were reachable by anonymous visitors before migration 000500.
+The suite now asserts the whole function surface, so that specific class cannot come back.
 
 ## Two decisions worth knowing
 
