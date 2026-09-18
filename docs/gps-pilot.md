@@ -3,9 +3,18 @@
 How to get a phone in a vehicle reporting its position, and a second phone watching it move
 on a map — before OTP, and before the Flutter app.
 
-## 1. Connect the map
+## 1. The map — nothing to do
 
-The map is the one piece that needs a key from Google.
+The map already works. With no key configured, both apps draw a real street map of Hassan
+from **OpenStreetMap**: real roads, real place names, the route and the moving vehicle.
+There is no key, no billing account and no setup. Drive the pilot on this.
+
+Google Maps stays the production path, for two reasons that only bite later: OpenStreetMap's
+tiles come from donated capacity and their usage policy does not cover a city-wide public
+service, and Google's imagery and road data for Hassan are better maintained. Nothing in the
+app changes when you switch — put a key in and the Google renderer takes over.
+
+### When you do want Google Maps
 
 1. **console.cloud.google.com** → create a project (or pick one).
 2. **APIs & Services → Library** → enable **Maps JavaScript API**.
@@ -22,12 +31,24 @@ The map is the one piece that needs a key from Google.
    NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=AIza...
    ```
 
-Restart the dev servers. The schematic preview map is replaced by a real map of Hassan.
+Restart the dev servers and the Google renderer takes over from OpenStreetMap.
 
 Two things worth knowing. The key is public — it ships in the page, which is why the referrer
 restriction is what protects it, not secrecy. And testing on a phone over your laptop's IP
 (`http://192.168.x.x:3000`) will be refused by a key restricted to `localhost`: add that
-origin too, or test the map on the laptop.
+origin too, or leave the key out and use the OpenStreetMap renderer, which has no such
+restriction.
+
+### Three renderers, one behaviour
+
+| Condition | What draws the map |
+| --- | --- |
+| A Maps key is configured | Google Maps |
+| No key | OpenStreetMap street map |
+| Tiles cannot load at all | Schematic preview, labelled as such |
+
+All three animate the same marker from the same fixes, so switching between them changes how
+the city looks and nothing about how the vehicle behaves.
 
 ## 2. Switch the apps to the database
 

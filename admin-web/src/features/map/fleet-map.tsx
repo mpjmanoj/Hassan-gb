@@ -10,6 +10,7 @@ import { loadGoogleMaps } from "@/features/map/loader";
 import { MAP_STYLE } from "@/features/map/map-style";
 import { createTruckMarkerElement, TRUCK_SVG } from "@/features/map/truck-marker";
 import { makeProjection, VIEW } from "@/features/map/projection";
+import { OsmFleetMap } from "@/features/map/osm-fleet-map";
 
 interface FleetMapProps {
   rows: FleetRow[];
@@ -198,7 +199,14 @@ function PreviewFleetMap({ rows, onSelect, selectedVehicleId }: FleetMapProps) {
   );
 }
 
+/**
+ * Google Maps when a key is configured, OpenStreetMap when there is none, and the
+ * schematic preview when even tiles cannot load. All three animate the same markers.
+ */
 export function FleetMap(props: FleetMapProps) {
-  if (!MAPS.apiKey) return <PreviewFleetMap {...props} />;
-  return <GoogleFleetMap {...props} />;
+  const [tilesFailed, setTilesFailed] = useState(false);
+
+  if (MAPS.apiKey) return <GoogleFleetMap {...props} />;
+  if (tilesFailed) return <PreviewFleetMap {...props} />;
+  return <OsmFleetMap {...props} onUnavailable={() => setTilesFailed(true)} />;
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { LatLng, VehicleLocation } from "@swachhata/core";
 import { MAPS } from "@/lib/config";
 import { GoogleLiveMap } from "@/features/map/google-live-map";
+import { OsmLiveMap } from "@/features/map/osm-live-map";
 import { PreviewMap } from "@/features/map/preview-map";
 
 interface LiveMapProps {
@@ -13,13 +14,22 @@ interface LiveMapProps {
 }
 
 /**
- * Chooses the real Google map when a key is configured and falls back to the preview
- * map otherwise, so a missing key degrades the map rather than the whole screen.
+ * Three renderers, one behaviour.
+ *
+ *   Google Maps       when a key is configured — the production path.
+ *   OpenStreetMap     when there is no key. A real street map, no key, no billing.
+ *   Preview           when even tiles cannot load. Schematic, and labelled as such.
+ *
+ * Each degrades to the next, so a missing key or a dead connection costs the map, never
+ * the screen. All three animate the same marker from the same fixes.
  */
 export function LiveMap({ location, route, vehicleNumber }: LiveMapProps) {
-  const [mapsFailed, setMapsFailed] = useState(!MAPS.apiKey);
+  const [googleFailed, setGoogleFailed] = useState(!MAPS.apiKey);
+  const [tilesFailed, setTilesFailed] = useState(false);
   const [follow, setFollow] = useState(true);
   const [recenterSignal, setRecenterSignal] = useState(0);
+
+  const renderer = MAPS.apiKey && !googleFailed ? "google" : tilesFailed ? "preview" : "osm";
 
   useEffect(() => {
     if (follow) setRecenterSignal((n) => n + 1);
@@ -32,9 +42,9 @@ export function LiveMap({ location, route, vehicleNumber }: LiveMapProps) {
 
   return (
     <div className="relative h-full w-full overflow-hidden">
-      {mapsFailed ? (
+      {renderer === "preview" ? (
         <PreviewMap location={location} route={route} vehicleNumber={vehicleNumber} />
-      ) : (
+      ) : renderer === "google" ? (
         <GoogleLiveMap
           location={location}
           route={route}
@@ -42,11 +52,21 @@ export function LiveMap({ location, route, vehicleNumber }: LiveMapProps) {
           follow={follow}
           onFollowChange={setFollow}
           recenterSignal={recenterSignal}
-          onUnavailable={() => setMapsFailed(true)}
+          onUnavailable={() => setGoogleFailed(true)}
+        />
+      ) : (
+        <OsmLiveMap
+          location={location}
+          route={route}
+          vehicleNumber={vehicleNumber}
+          follow={follow}
+          onFollowChange={setFollow}
+          recenterSignal={recenterSignal}
+          onUnavailable={() => setTilesFailed(true)}
         />
       )}
 
-      {!mapsFailed && !follow ? (
+      {renderer !== "preview" && !follow ? (
         <button
           type="button"
           onClick={recenter}

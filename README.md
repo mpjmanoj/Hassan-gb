@@ -75,14 +75,16 @@ pure function of its route and the clock — so every tab computes the identical
 without anything coordinating them. All of this is replaced by Supabase and the Flutter
 worker app; nothing here is meant to ship.
 
-### Google Maps
+### Maps
 
-Set `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` in `.env.local` to render the real Google map. Without
-a key the app falls back to a clearly-labelled schematic preview map that uses the same live
-coordinates and the same animation, so the tracking experience stays reviewable.
+Nothing is required to see a real map. With no key configured, both apps draw Hassan from
+**OpenStreetMap** — real streets, the route, the moving vehicle. Set
+`NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` and the Google renderer takes over; that is the production
+path, because OpenStreetMap's public tiles are donated capacity not meant for a city-wide
+service. If tiles cannot load at all, a schematic map takes over and says so.
 
-Restrict the browser key by HTTP referrer and to the Maps JavaScript API. It is a public key
-by design; nothing secret belongs in the front end.
+Restrict a Google browser key by HTTP referrer and to the Maps JavaScript API. It is a public
+key by design; nothing secret belongs in the front end.
 
 ## Switching to the real backend
 
