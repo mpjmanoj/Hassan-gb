@@ -55,7 +55,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       };
     }
 
-    const client = getSupabaseClient();
+    let client;
+    try {
+      client = getSupabaseClient();
+    } catch {
+      // Misconfigured deployment: show the app signed out rather than a blank screen.
+      setReady(true);
+      return;
+    }
 
     void client.auth.getSession().then(async ({ data }) => {
       // No OTP yet: a resident is signed in anonymously and goes straight to ward selection.
