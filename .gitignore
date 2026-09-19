@@ -1,0 +1,27 @@
+# Dependencies are installed, never committed. Without this file the workspace root had
+# no ignore rules at all, so node_modules was being carried into the repository.
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Environment — keys live on the machine and in the host's settings, never in git
+.env
+.env.local
+.env*.local
+
+# Editor and OS noise
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Vercel
+.vercel
