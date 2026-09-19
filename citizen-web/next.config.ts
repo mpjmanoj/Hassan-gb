@@ -13,6 +13,10 @@ const nextConfig: NextConfig = {
    * In production each app is deployed separately and talks to Supabase instead.
    */
   async rewrites() {
+    // Development only. In production each app is deployed separately, and proxying to a
+    // localhost port would just be a broken route.
+    if (process.env.NODE_ENV === "production" && !process.env.ADMIN_ORIGIN) return [];
+
     const adminOrigin = process.env.ADMIN_ORIGIN ?? "http://localhost:3001";
     return [
       { source: "/ops", destination: `${adminOrigin}/ops` },
