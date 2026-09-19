@@ -1,0 +1,20 @@
+{
+  "name": "swachhata-hasan",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "citizen-web",
+    "admin-web"
+  ],
+  "scripts": {
+    "dev:citizen": "npm run dev -w swachhata-hasan-citizen",
+    "dev:admin": "npm run dev -w swachhata-hasan-admin -- -p 3001",
+    "build": "npm run build -w swachhata-hasan-citizen && npm run build -w swachhata-hasan-admin",
+    "typecheck": "npm run typecheck -w swachhata-hasan-citizen && npm run typecheck -w swachhata-hasan-admin",
+    "test": "node --import tsx --test packages/core/tests/*.test.ts",
+    "dev": "concurrently -n citizen,ops -c green,blue \"npm:dev:citizen\" \"npm:dev:admin\""
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
+  }
+}

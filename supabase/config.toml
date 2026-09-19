@@ -1,0 +1,7 @@
+# Supabase CLI project configuration.
+# The project ref is public — it is simply your project's subdomain. Keys are not: they
+# belong in .env.local and in your host's environment, never in this repository.
+project_id = "ceriyojkzhiwcedzgbtn"
+
+[db]
+major_version = 15

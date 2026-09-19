@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-surface-muted text-ink antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Never rely on colour alone, and never trap the keyboard. */
+  :focus-visible {
+    @apply outline-none ring-2 ring-brand ring-offset-2 ring-offset-white;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card border border-line bg-surface shadow-card;
+  }
+
+  .label {
+    @apply text-xs font-semibold uppercase tracking-[0.08em] text-ink-muted;
+  }
+
+  .btn {
+    @apply inline-flex min-h-[52px] items-center justify-center gap-2 rounded-2xl px-6
+           text-[15px] font-semibold transition-[transform,background-color,opacity]
+           duration-150 active:scale-[0.985] disabled:pointer-events-none disabled:opacity-45;
+  }
+
+  .btn-primary {
+    @apply btn bg-brand text-white hover:bg-brand-dark;
+  }
+
+  .btn-secondary {
+    @apply btn border border-line bg-surface text-ink hover:bg-surface-muted;
+  }
+
+  .field {
+    @apply h-[52px] w-full rounded-2xl border border-line bg-surface px-4 text-[16px]
+           text-ink placeholder:text-ink-muted/70 focus:border-brand;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Live vehicle marker — shared by the Google map and the offline preview map. */
+.shv-marker {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+}
+
+.shv-marker__halo {
+  position: absolute;
+  inset: -9px;
+  border-radius: 9999px;
+  background: rgba(8, 127, 91, 0.16);
+  animation: shv-halo 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.shv-marker__plate {
+  position: relative;
+  display: grid;
+  place-items: center;
+  filter: drop-shadow(0 4px 8px rgba(16, 32, 26, 0.32));
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.shv-marker__label {
+  position: absolute;
+  top: -26px;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  background: #10201a;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+@keyframes shv-halo {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  70% { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
