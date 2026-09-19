@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LatLng } from "./types";
 import { translateError } from "./errors";
+import { PILOT_ACCOUNT } from "./pilot-account";
 
 /**
  * What a collection worker's device needs from the backend.
@@ -35,21 +36,30 @@ export interface GpsFix {
 export function createWorkerService(client: SupabaseClient) {
   return {
     /**
-     * Anonymous sign-in: a real token, no SMS. It is what lets the whole secured pipeline
-     * be exercised before the OTP provider is connected.
+     * A real token, no SMS — which is what lets the whole secured pipeline be exercised
+     * before the OTP provider is connected.
+     *
+     * Anonymous sign-in is tried first because it leaves no shared credential behind. When
+     * that provider is switched off, the pilot account takes over rather than the drive
+     * being blocked on a dashboard toggle.
      */
     async ensureSession(): Promise<string> {
       const { data } = await client.auth.getSession();
       if (data.session?.user.id) return data.session.user.id;
 
-      const { data: created, error } = await client.auth.signInAnonymously();
-      if (error || !created.user) {
-        throw translateError(
-          error,
-          "Could not start a session. Check that anonymous sign-ins are enabled for this project.",
-        );
-      }
-      return created.user.id;
+      const anonymous = await client.auth.signInAnonymously();
+      if (anonymous.data.user) return anonymous.data.user.id;
+
+      const pilot = await client.auth.signInWithPassword({
+        email: PILOT_ACCOUNT.email,
+        password: PILOT_ACCOUNT.password,
+      });
+      if (pilot.data.user) return pilot.data.user.id;
+
+      throw translateError(
+        pilot.error ?? anonymous.error,
+        "Could not start a session. Both anonymous and pilot sign-in were refused.",
+      );
     },
 
     async listPairableWorkers(): Promise<{ id: string; name: string }[]> {

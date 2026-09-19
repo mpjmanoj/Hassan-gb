@@ -9,6 +9,7 @@ export { createSupabaseDataService } from "./supabase-service";
 export type { SupabaseDataService } from "./supabase-service";
 export { createSupabaseOps } from "./supabase-store";
 export { createWorkerService, fixFromPosition } from "./worker-service";
+export { PILOT_ACCOUNT } from "./pilot-account";
 export type { WorkerService, WorkerAssignment, GpsFix } from "./worker-service";
 export { demoOps } from "./ops";
 export type { OpsStore } from "./ops";

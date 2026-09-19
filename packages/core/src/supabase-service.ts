@@ -11,6 +11,7 @@ import type {
   WardTracking,
 } from "./types";
 import { OperationError, translateError } from "./errors";
+import { PILOT_ACCOUNT } from "./pilot-account";
 import { todayIso } from "./time";
 
 /**
@@ -366,14 +367,26 @@ export function createSupabaseDataService(client: SupabaseClient) {
       let userId = data.session?.user.id ?? null;
 
       if (!userId) {
-        const { data: created, error } = await client.auth.signInAnonymously();
-        if (error || !created.user) {
+        const anonymous = await client.auth.signInAnonymously();
+
+        // Falls back to the pilot account when the anonymous provider is switched off,
+        // so the map is not blocked on a dashboard setting during the test drive.
+        const signedIn =
+          anonymous.data.user ??
+          (
+            await client.auth.signInWithPassword({
+              email: PILOT_ACCOUNT.email,
+              password: PILOT_ACCOUNT.password,
+            })
+          ).data.user;
+
+        if (!signedIn) {
           throw translateError(
-            error,
-            "Could not start a session. Check that anonymous sign-ins are enabled for this project.",
+            anonymous.error,
+            "Could not start a session. Both anonymous and pilot sign-in were refused.",
           );
         }
-        userId = created.user.id;
+        userId = signedIn.id;
       }
 
       const existing = await this.getCitizen(userId);

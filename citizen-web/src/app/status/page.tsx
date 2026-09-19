@@ -77,26 +77,44 @@ export default function StatusPage() {
 
       try {
         const { getSupabaseClient } = await import("@/lib/supabase");
+        const { PILOT_ACCOUNT } = await import("@swachhata/core");
         const client = getSupabaseClient();
-        const { data, error } = await client.auth.signInAnonymously();
 
-        if (error) {
-          extra.push({
-            label: "Anonymous sign-in",
-            value: error.message,
-            ok: false,
-            hint: "Supabase → Authentication → Providers → Anonymous sign-ins → ON",
-          });
-        } else {
-          extra.push({
-            label: "Anonymous sign-in",
-            value: data.user ? "works" : "no user returned",
-            ok: Boolean(data.user),
-          });
-        }
-      } catch (caught) {
+        const anonymous = await client.auth.signInAnonymously();
         extra.push({
           label: "Anonymous sign-in",
+          value: anonymous.data.user ? "works" : (anonymous.error?.message ?? "refused"),
+          ok: Boolean(anonymous.data.user),
+          hint: anonymous.data.user
+            ? undefined
+            : "Switched off in Supabase — the pilot account below is used instead",
+        });
+
+        if (!anonymous.data.user) {
+          const pilot = await client.auth.signInWithPassword({
+            email: PILOT_ACCOUNT.email,
+            password: PILOT_ACCOUNT.password,
+          });
+          extra.push({
+            label: "Pilot sign-in",
+            value: pilot.data.user ? "works" : (pilot.error?.message ?? "refused"),
+            ok: Boolean(pilot.data.user),
+            hint: pilot.data.user
+              ? undefined
+              : "Supabase → Authentication → Providers → Email must be enabled",
+          });
+        }
+
+        // Whether a session exists at all is what actually decides if the app works.
+        const { data: session } = await client.auth.getSession();
+        extra.push({
+          label: "Signed in",
+          value: session.session ? "yes" : "no",
+          ok: Boolean(session.session),
+        });
+      } catch (caught) {
+        extra.push({
+          label: "Sign-in",
           value: caught instanceof Error ? caught.message : "failed",
           ok: false,
         });
